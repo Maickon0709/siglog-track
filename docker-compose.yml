@@ -1,0 +1,45 @@
+# Sobe o SIG-Log Track completo: servico + RabbitMQ + Prometheus + Grafana.
+#   docker compose up --build
+services:
+  track:
+    build: .
+    image: siglog-track:local
+    ports:
+      - "8000:8000"     # API (/docs) e o ESP32 envia para http://<ip-do-pc>:8000/sensor-readings
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/%2F
+      DEVICE_API_KEY: ${DEVICE_API_KEY:-troque-esta-chave}
+      OFFLINE_SEGUNDOS: "60"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    ports:
+      - "5672:5672"     # AMQP (os outros squads conectam aqui)
+      - "15672:15672"   # painel http://localhost:15672 (guest/guest)
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      retries: 10
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    ports:
+      - "3000:3000"     # http://localhost:3000 (admin/admin)
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus

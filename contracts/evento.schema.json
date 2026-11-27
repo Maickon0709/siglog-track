@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://siglog.local/contracts/tracking/evento.schema.json",
+  "title": "Envelope de evento do SIG-Log Track",
+  "type": "object",
+  "required": ["event", "eventId", "version", "source", "timestamp", "data"],
+  "properties": {
+    "event": {
+      "enum": [
+        "TemperaturaAtualizada",
+        "PosicaoAtualizada",
+        "AlertaTemperatura",
+        "AlertaTemperaturaEncerrado",
+        "DispositivoOffline"
+      ]
+    },
+    "eventId": { "type": "string", "format": "uuid" },
+    "version": { "type": "integer", "minimum": 1 },
+    "source": { "const": "siglog-track" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "correlationId": { "type": ["string", "null"] },
+    "data": { "type": "object" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "event": { "const": "TemperaturaAtualizada" } } },
+      "then": { "properties": { "data": { "$ref": "#/$defs/TemperaturaAtualizada" } } }
+    },
+    {
+      "if": { "properties": { "event": { "const": "PosicaoAtualizada" } } },
+      "then": { "properties": { "data": { "$ref": "#/$defs/PosicaoAtualizada" } } }
+    },
+    {
+      "if": { "properties": { "event": { "const": "AlertaTemperatura" } } },
+      "then": { "properties": { "data": { "$ref": "#/$defs/AlertaTemperatura" } } }
+    },
+    {
+      "if": { "properties": { "event": { "const": "AlertaTemperaturaEncerrado" } } },
+      "then": { "properties": { "data": { "$ref": "#/$defs/AlertaTemperaturaEncerrado" } } }
+    },
+    {
+      "if": { "properties": { "event": { "const": "DispositivoOffline" } } },
+      "then": { "properties": { "data": { "$ref": "#/$defs/DispositivoOffline" } } }
+    }
+  ],
+  "$defs": {
+    "vinculo": {
+      "type": "object",
+      "required": ["deviceId", "shipmentId"],
+      "properties": {
+        "deviceId": { "type": "string" },
+        "shipmentId": { "type": "string" },
+        "vehicleId": { "type": ["string", "null"] },
+        "tripId": { "type": ["string", "null"] }
+      }
+    },
+    "TemperaturaAtualizada": {
+      "allOf": [{ "$ref": "#/$defs/vinculo" }],
+      "required": ["temperatura", "dentroDaFaixa"],
+      "properties": {
+        "temperatura": { "type": "number" },
+        "umidade": { "type": ["number", "null"] },
+        "bateria": { "type": ["integer", "null"], "minimum": 0, "maximum": 100 },
+        "dentroDaFaixa": { "type": "boolean" }
+      }
+    },
+    "PosicaoAtualizada": {
+      "allOf": [{ "$ref": "#/$defs/vinculo" }],
+      "required": ["latitude", "longitude"],
+      "properties": {
+        "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+        "longitude": { "type": "number", "minimum": -180, "maximum": 180 }
+      }
+    },
+    "AlertaTemperatura": {
+      "allOf": [{ "$ref": "#/$defs/vinculo" }],
+      "required": ["alertId", "tipo", "valor", "severidade", "inicioViolacao"],
+      "properties": {
+        "alertId": { "type": "string" },
+        "tipo": { "enum": ["TEMPERATURA_ALTA", "TEMPERATURA_BAIXA", "UMIDADE_ALTA"] },
+        "valor": { "type": "number" },
+        "limiteMin": { "type": ["number", "null"] },
+        "limiteMax": { "type": ["number", "null"] },
+        "tipoCarga": { "type": "string" },
+        "severidade": { "enum": ["ALERTA", "CRITICA"] },
+        "inicioViolacao": { "type": "string", "format": "date-time" }
+      }
+    },
+    "AlertaTemperaturaEncerrado": {
+      "allOf": [{ "$ref": "#/$defs/vinculo" }],
+      "required": ["alertId", "tipo", "inicioViolacao", "fimViolacao", "duracaoSegundos"],
+      "properties": {
+        "alertId": { "type": "string" },
+        "tipo": { "enum": ["TEMPERATURA_ALTA", "TEMPERATURA_BAIXA", "UMIDADE_ALTA"] },
+        "valorExtremo": { "type": "number" },
+        "inicioViolacao": { "type": "string", "format": "date-time" },
+        "fimViolacao": { "type": "string", "format": "date-time" },
+        "duracaoSegundos": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "DispositivoOffline": {
+      "allOf": [{ "$ref": "#/$defs/vinculo" }],
+      "required": ["ultimaLeitura", "segundosSemSinal"],
+      "properties": {
+        "ultimaLeitura": { "type": "string", "format": "date-time" },
+        "segundosSemSinal": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+.env
+firmware/sensor_esp32/config.h
+firmware/sensor_esp32/build/

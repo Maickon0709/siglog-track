@@ -1,0 +1,8 @@
+.venv
+.git
+tests
+docs
+firmware
+data
+monitoring
+**/__pycache__
