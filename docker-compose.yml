@@ -9,6 +9,7 @@ services:
     environment:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/%2F
       DEVICE_API_KEY: ${DEVICE_API_KEY:-troque-esta-chave}
+      SQUAD_API_KEYS: ${SQUAD_API_KEYS:-wms=dev-wms,fleet=dev-fleet,finance=dev-finance,people=dev-people,crm=dev-crm,track=dev-track}
       OFFLINE_SEGUNDOS: "60"
     depends_on:
       rabbitmq:

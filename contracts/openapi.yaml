@@ -1,7 +1,9 @@
 openapi: 3.1.0
 info:
   title: SIG-Log Track — Sensor IoT
-  version: 1.0.0
+  description: Consultas e cadastro exigem o header **X-API-Key** do seu squad. O
+    sensor usa **X-Device-Key** em `/sensor-readings`.
+  version: 1.1.0
 paths:
   /health:
     get:
@@ -37,12 +39,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - APIKeyHeader: []
   /devices/{device_id}:
     get:
       tags:
       - dispositivos
       summary: Obter Dispositivo
       operationId: obter_dispositivo_devices__device_id__get
+      security:
+      - APIKeyHeader: []
       parameters:
       - name: device_id
         in: path
@@ -100,6 +106,8 @@ paths:
       - consultas
       summary: Localizacao
       operationId: localizacao_shipments__shipment_id__location_get
+      security:
+      - APIKeyHeader: []
       parameters:
       - name: shipment_id
         in: path
@@ -125,6 +133,8 @@ paths:
       - consultas
       summary: Historico
       operationId: historico_shipments__shipment_id__history_get
+      security:
+      - APIKeyHeader: []
       parameters:
       - name: shipment_id
         in: path
@@ -159,6 +169,8 @@ paths:
       - consultas
       summary: Alertas
       operationId: alertas_alerts_get
+      security:
+      - APIKeyHeader: []
       parameters:
       - name: shipmentId
         in: query
@@ -315,3 +327,9 @@ components:
       - msg
       - type
       title: ValidationError
+  securitySchemes:
+    APIKeyHeader:
+      type: apiKey
+      description: Chave do squad que esta chamando (uma por squad)
+      in: header
+      name: X-API-Key

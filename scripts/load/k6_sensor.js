@@ -4,6 +4,7 @@ import { check } from "k6";
 
 const BASE = __ENV.BASE_URL || "http://localhost:8000";
 const CHAVE = __ENV.DEVICE_API_KEY || "troque-esta-chave";
+const CHAVE_SQUAD = __ENV.SQUAD_API_KEY || "dev-track";
 const SENSORES = 50;
 
 const CENARIOS = {
@@ -37,7 +38,7 @@ export function setup() {
   for (let i = 0; i < SENSORES; i++) {
     http.post(`${BASE}/devices`, JSON.stringify({
       deviceId: `LOAD-${i}`, shipmentId: `EXP-LOAD-${i}`, tipoCarga: "VACINA",
-    }), json);
+    }), { headers: { "Content-Type": "application/json", "X-API-Key": CHAVE_SQUAD } });
   }
 }
 

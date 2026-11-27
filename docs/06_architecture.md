@@ -26,4 +26,5 @@ Veja os ADRs em [`adr/`](adr/).
 | `RABBITMQ_URL` | `amqp://guest:guest@localhost:5672/%2F` | Broker |
 | `EXCHANGE` | `siglog.events` | Exchange compartilhado da plataforma |
 | `DEVICE_API_KEY` | `troque-esta-chave` | Chave do sensor (**trocar em produção**) |
+| `SQUAD_API_KEYS` | `wms=dev-wms,fleet=dev-fleet,...` | Uma chave por squad (**trocar em produção**) |
 | `OFFLINE_SEGUNDOS` | `60` | Limite para `DispositivoOffline` |
