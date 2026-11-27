@@ -4,7 +4,8 @@ set -euo pipefail
 
 echo ">> Instalando Docker e Docker Compose (repositorio oficial do Debian)"
 sudo apt-get update
-sudo apt-get install -y docker.io docker-compose
+# No Debian 13 o comando `docker` fica no pacote docker-cli, separado do motor (docker.io)
+sudo apt-get install -y docker.io docker-cli docker-compose
 
 echo ">> Liberando Docker sem sudo (grupo docker) e a porta USB do ESP32 (grupo dialout)"
 sudo usermod -aG docker,dialout "$USER"
