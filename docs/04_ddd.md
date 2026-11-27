@@ -25,7 +25,8 @@ Guarda o vínculo (carga, veículo, viagem), a faixa e o estado das violações.
 | Alerta | `Violacao` + registro em `/alerts` |
 | Localizacao | campos `latitude`/`longitude` da leitura |
 | HistoricoTracking | histórico por `shipmentId` no repositório |
-| Carga, Rota | referências externas (`shipmentId` do WMS, `tripId` do Fleet) |
+| Carga | `Carga` (`src/domain/carga.py`): status alimentado pelo `CargaExpedida` do WMS |
+| Rota | referência externa (`tripId` da Frota) |
 | EventoTelemetria | eventos de domínio publicados (ver 08) |
 
 ## Comandos → Eventos (Event Storming)
@@ -36,4 +37,4 @@ Guarda o vínculo (carga, veículo, viagem), a faixa e o estado das violações.
 | Regra (política) | — | Dispositivo | AlertaTemperatura |
 | Regra (política) | — | Dispositivo | AlertaTemperaturaEncerrado |
 | Relógio (monitor) | VerificarOffline | Dispositivo | DispositivoOffline |
-| WMS | (externo) | — | CargaExpedida → vincula sensor (⏳) |
+| WMS | (externo) CargaExpedida | Carga | carga passa a EM_TRANSITO (✅) |

@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 from src.api.seguranca import exigir_squad, squad_autenticado
 from src.application.servico_telemetria import DispositivoNaoEncontrado, ServicoTelemetria
 from src.config import settings
+from src.infrastructure.consumidor import ConsumidorRabbitMQ
 from src.infrastructure.publicador import PublicadorRabbitMQ
 from src.infrastructure.repositorio import RepositorioEmMemoria
 
@@ -70,7 +71,7 @@ def criar_app(servico: ServicoTelemetria | None = None, iniciar_monitor: bool = 
         servico = ServicoTelemetria(
             RepositorioEmMemoria(settings.HISTORICO_MAX_POR_CARGA),
             PublicadorRabbitMQ(settings.RABBITMQ_URL, settings.EXCHANGE, settings.ROUTING_PREFIX),
-            settings.SERVICE_NAME,
+            settings.SOURCE,
             settings.OFFLINE_SEGUNDOS,
         )
 
@@ -82,10 +83,17 @@ def criar_app(servico: ServicoTelemetria | None = None, iniciar_monitor: bool = 
             while not parar.wait(10):
                 servico.verificar_offline()
 
+        consumidor = None
         if iniciar_monitor:
             threading.Thread(target=monitor, daemon=True, name="monitor-offline").start()
+            if settings.CONSUMIR_WMS:
+                consumidor = ConsumidorRabbitMQ(settings.RABBITMQ_URL, settings.FILA_WMS,
+                                                servico.processar_evento_externo)
+                consumidor.iniciar()
         yield
         parar.set()
+        if consumidor:
+            consumidor.parar()
         servico.publicador.fechar()
 
     app = FastAPI(
@@ -146,6 +154,14 @@ def criar_app(servico: ServicoTelemetria | None = None, iniciar_monitor: bool = 
         except DispositivoNaoEncontrado:
             raise HTTPException(404, "dispositivo nao registrado: faca POST /devices primeiro") from None
         return {"eventos": eventos}
+
+    @app.get("/shipments/{shipment_id}", tags=["consultas"], dependencies=[consulta])
+    def status_carga(shipment_id: str):
+        """UC09: status da carga (EM_TRANSITO depois do CargaExpedida do WMS)."""
+        carga = servico.status_carga(shipment_id)
+        if carga is None:
+            raise HTTPException(404, "carga ainda nao expedida pelo WMS")
+        return carga
 
     @app.get("/shipments/{shipment_id}/location", tags=["consultas"], dependencies=[consulta])
     def localizacao(shipment_id: str):

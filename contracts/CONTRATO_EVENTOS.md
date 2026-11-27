@@ -1,156 +1,131 @@
 # Contrato de Eventos — SIG-Log Track (Squad 03)
 
-Este é o contrato que o Track publica para os outros squads. Ele é **independente
-de linguagem**: qualquer squad (Python, Java, Node, C#...) consome lendo JSON de
-uma fila do RabbitMQ. Nenhum squad precisa importar código do Track.
+Este é o contrato que o Track publica para os outros módulos. Ele é **independente de linguagem**:
+qualquer módulo (Python, Java, Node, C#...) consome lendo JSON de uma fila do RabbitMQ, sem importar
+código do Track.
 
-Schema formal: [`evento.schema.json`](evento.schema.json) (JSON Schema draft 2020-12).
+Segue a **mesma convenção do WMS** ([Projeto-WMS-](https://github.com/ViniciusNascimento99/Projeto-WMS-)),
+para que todos os módulos da plataforma falem igual.
 
-## 1. Onde os eventos são publicados
-
-| Item | Valor |
+| Arquivo | Conteúdo |
 |---|---|
-| Broker | RabbitMQ (AMQP 0-9-1, porta 5672) |
-| Exchange | `siglog.events` |
-| Tipo do exchange | `topic`, durável |
-| Routing key | `tracking.<NomeDoEvento>` (ex.: `tracking.AlertaTemperatura`) |
-| Content-Type | `application/json`, UTF-8 |
-| Entrega | mensagens persistentes (`delivery_mode=2`) |
+| [`events.schema.json`](events.schema.json) | JSON Schema (draft 2020-12), um bloco por evento |
+| [`events.examples.json`](events.examples.json) | Um exemplo válido de cada evento |
+| [`../monitoring/rabbitmq/definitions.json`](../monitoring/rabbitmq/definitions.json) | Exchanges, filas, DLQs e bindings |
+| [`openapi.yaml`](openapi.yaml) | API REST |
 
-Cada squad cria **a própria fila** e faz o bind só no que interessa:
+## 1. Convenção de mensageria da plataforma
 
-| Squad | Fila sugerida | Binding keys |
+| Item | Padrão | No Track |
 |---|---|---|
-| 02 — Fleet | `fleet.tracking` | `tracking.PosicaoAtualizada`, `tracking.DispositivoOffline`, `tracking.AlertaTemperatura` |
-| 04 — Finance | `finance.tracking` | `tracking.AlertaTemperatura`, `tracking.AlertaTemperaturaEncerrado` |
-| 06 — CRM | `crm.tracking` | `tracking.#` |
+| Exchange | um `topic` por módulo produtor: `siglog.<modulo>.events` | `siglog.tracking.events` |
+| Routing key | `<modulo>.<evento.em.minusculas.com.pontos>.v<versao>` | `tracking.alerta.temperatura.v1` |
+| Fila | uma por consumidor e produtor: `<consumidor>.<produtor>.events` | `financeiro.tracking.events` |
+| Fila de erro | `<fila>.dlq`, via exchange `siglog.<produtor>.dlx` | `financeiro.tracking.events.dlq` |
+| Tipo de fila | `quorum`, durável | — |
+| Mensagem | JSON UTF-8, persistente (`delivery_mode=2`) | — |
+| Nomes dos módulos | `wms`, `frota`, `tracking`, `financeiro`, `rh`, `crm` | — |
 
-> O exchange `siglog.events` é compartilhado pela plataforma. Os outros squads
-> publicam nele com o prefixo deles (`fleet.*`, `finance.*`, `wms.*`...).
+As filas de quem consome o Track **já são criadas** pelo `definitions.json` do Track:
 
-## 2. Envelope (igual para todos os eventos)
+| Fila | Eventos que recebe |
+|---|---|
+| `frota.tracking.events` | `PosicaoAtualizada`, `DispositivoOffline`, `AlertaTemperatura` |
+| `financeiro.tracking.events` | `AlertaTemperatura`, `AlertaTemperaturaEncerrado` |
+| `crm.tracking.events` | `PosicaoAtualizada`, `AlertaTemperatura`, `AlertaTemperaturaEncerrado`, `DispositivoOffline` |
+
+> `TemperaturaAtualizada` (1 mensagem a cada ~10 s por sensor) não vai para nenhuma fila por padrão.
+> Quem quiser a série completa consulta `GET /shipments/{id}/history` ou pede um binding novo.
+
+## 2. Formato da mensagem
+
+Campos de controle **na raiz**, seguidos dos dados do evento (sem bloco `data`), como no WMS:
 
 ```json
 {
   "event": "AlertaTemperatura",
-  "eventId": "7c1e0f7e-3c1b-4a43-9a51-0c5b0d4c2a11",
   "version": 1,
-  "source": "siglog-track",
+  "eventId": "3f2b8c1e-9a4d-4e57-b6a2-1c0d9e8f7a65",
   "timestamp": "2026-11-26T14:00:00Z",
   "correlationId": "EXP-001",
-  "data": { }
+  "source": "tracking",
+  "deviceId": "IOT-001",
+  "shipmentId": "EXP-001",
+  "vehicleId": "VEI-042",
+  "tripId": "VIA-2026-0917",
+  "...": "campos do evento"
 }
 ```
 
 | Campo | Tipo | Descrição |
 |---|---|---|
-| `event` | string | Nome do evento (igual ao final da routing key). |
-| `eventId` | UUID | Único por mensagem. **Use para idempotência** (ignore IDs repetidos). |
-| `version` | int | Versão do formato de `data`. Mudança incompatível → nova versão. |
-| `source` | string | Sempre `siglog-track`. |
-| `timestamp` | ISO-8601 UTC | Quando o evento aconteceu. |
-| `correlationId` | string \| null | `shipmentId` da carga; usado para tracing entre squads. |
-| `data` | objeto | Conteúdo específico do evento (abaixo). |
+| `event` | string | Nome do evento em PascalCase |
+| `version` | int | Versão do formato. Igual ao `v1` da routing key |
+| `eventId` | UUID | Único por mensagem. **Use para idempotência** |
+| `timestamp` | ISO-8601 UTC, sem frações (`2026-11-26T14:00:00Z`) | Quando aconteceu |
+| `correlationId` | string | `shipmentId` da carga |
+| `source` | `"tracking"` | Módulo que publicou |
+| `deviceId`, `shipmentId` | string | Sempre presentes |
+| `vehicleId`, `tripId` | string ou `null` | Vêm da Frota, quando o sensor foi vinculado a uma viagem |
+
+O schema usa `additionalProperties: false`, assim como o do WMS: **qualquer mudança nos campos gera uma
+nova versão** (`v2`, com routing key nova), e a `v1` continua sendo publicada até todos migrarem.
 
 ## 3. Identificadores compartilhados
 
-Os IDs abaixo **não são criados pelo Track**: vêm dos outros squads e são
-associados ao sensor no `POST /devices`.
-
 | Campo | Dono | Exemplo |
 |---|---|---|
-| `shipmentId` | Squad 01 (WMS, evento `CargaExpedida`) | `EXP-001` |
-| `vehicleId` | Squad 02 (Fleet) | `VEI-042` |
-| `tripId` | Squad 02 (Fleet) | `VIA-2026-0917` |
-| `deviceId` | Squad 03 (Track) | `IOT-001` |
+| `shipmentId` | WMS (`CargaExpedida`) | `EXP-001` |
+| `vehicleId`, `tripId` | Frota | `VEI-042`, `VIA-2026-0917` |
+| `deviceId` | Track | `IOT-001` |
 
-## 4. Eventos
+## 4. Eventos publicados
 
-### TemperaturaAtualizada
-Uma leitura válida do sensor. Volume alto (1 a cada ~10 s por sensor).
-```json
-"data": {
-  "deviceId": "IOT-001", "shipmentId": "EXP-001",
-  "vehicleId": "VEI-042", "tripId": "VIA-2026-0917",
-  "temperatura": 5.2, "umidade": 61.0, "bateria": 88,
-  "dentroDaFaixa": true
-}
-```
+Exemplos completos em [`events.examples.json`](events.examples.json).
 
-### PosicaoAtualizada
-Publicado quando a leitura traz latitude/longitude.
-```json
-"data": {
-  "deviceId": "IOT-001", "shipmentId": "EXP-001",
-  "vehicleId": "VEI-042", "tripId": "VIA-2026-0917",
-  "latitude": -23.5505, "longitude": -46.6333
-}
-```
+| Evento | Routing key | Quando | Campos próprios |
+|---|---|---|---|
+| `TemperaturaAtualizada` | `tracking.temperatura.atualizada.v1` | A cada leitura | `temperatura`, `umidade`, `bateria`, `dentroDaFaixa` |
+| `PosicaoAtualizada` | `tracking.posicao.atualizada.v1` | Leitura com GPS | `latitude`, `longitude` |
+| `AlertaTemperatura` | `tracking.alerta.temperatura.v1` | 3 leituras seguidas fora da faixa (uma vez por violação) | `alertId`, `tipo`, `valor`, `limiteMin`, `limiteMax`, `tipoCarga`, `severidade`, `inicioViolacao` |
+| `AlertaTemperaturaEncerrado` | `tracking.alerta.temperatura.encerrado.v1` | Condição normalizou | `alertId`, `tipo`, `valorExtremo`, `inicioViolacao`, `fimViolacao`, `duracaoSegundos` |
+| `DispositivoOffline` | `tracking.dispositivo.offline.v1` | Sem leitura há mais de 60 s | `ultimaLeitura`, `segundosSemSinal` |
 
-### AlertaTemperatura
-Temperatura ou umidade fora da faixa por **N leituras seguidas** (padrão 3).
-Publicado **uma vez** por violação, não a cada leitura.
-```json
-"data": {
-  "alertId": "ALT-3f9a2c", "deviceId": "IOT-001", "shipmentId": "EXP-001",
-  "vehicleId": "VEI-042", "tripId": "VIA-2026-0917",
-  "tipo": "TEMPERATURA_ALTA",
-  "valor": 9.4, "limiteMin": 2.0, "limiteMax": 8.0,
-  "tipoCarga": "VACINA",
-  "severidade": "CRITICA",
-  "inicioViolacao": "2026-11-26T13:59:30Z"
-}
-```
-`tipo`: `TEMPERATURA_ALTA` | `TEMPERATURA_BAIXA` | `UMIDADE_ALTA`
-`severidade`: `ALERTA` (até 2 °C / 10 % além do limite) | `CRITICA` (acima disso)
+- `tipo`: `TEMPERATURA_ALTA` · `TEMPERATURA_BAIXA` · `UMIDADE_ALTA`
+- `severidade`: `ALERTA` (até 2 °C / 10 % além do limite) · `CRITICA` (acima disso)
+- O **Financeiro** usa `duracaoSegundos` do `AlertaTemperaturaEncerrado` para calcular multa, desconto ou indenização.
 
-### AlertaTemperaturaEncerrado
-A condição voltou ao normal. Traz a **duração**, que o Finance usa para calcular
-multa/desconto/indenização.
-```json
-"data": {
-  "alertId": "ALT-3f9a2c", "deviceId": "IOT-001", "shipmentId": "EXP-001",
-  "vehicleId": "VEI-042", "tripId": "VIA-2026-0917",
-  "tipo": "TEMPERATURA_ALTA",
-  "valorExtremo": 11.8,
-  "inicioViolacao": "2026-11-26T13:59:30Z",
-  "fimViolacao": "2026-11-26T14:21:10Z",
-  "duracaoSegundos": 1300
-}
-```
+## 5. Eventos consumidos
 
-### DispositivoOffline
-O sensor ficou sem enviar leituras por mais de `OFFLINE_SEGUNDOS` (padrão 60).
-```json
-"data": {
-  "deviceId": "IOT-001", "shipmentId": "EXP-001",
-  "vehicleId": "VEI-042", "tripId": "VIA-2026-0917",
-  "ultimaLeitura": "2026-11-26T14:00:00Z", "segundosSemSinal": 75
-}
-```
+| Fila do Track | Produtor | Routing keys | O que o Track faz |
+|---|---|---|---|
+| `tracking.wms.events` | WMS | `wms.carga.expedida.v1` | Carga passa a `EM_TRANSITO` (UC09, `GET /shipments/{id}`) |
+| | | `wms.mercadoria.recebida.v1`, `wms.produto.armazenado.v1` | Recebidos e ignorados (ack) |
 
-## 5. Regras para quem consome
+Mensagem que não é JSON ou que quebra o processamento vai para `tracking.wms.events.dlq`.
+
+## 6. Regras para quem consome
 
 1. **Idempotência:** guarde os `eventId` processados; o RabbitMQ pode reentregar.
-2. **Ignore campos desconhecidos:** o Track pode adicionar campos novos em `data`
-   sem mudar `version`. Remover ou renomear campo sempre muda `version`.
-3. **Campos opcionais** (`vehicleId`, `tripId`, `umidade`, `bateria`) podem vir `null`.
-4. **ack manual:** só dê `ack` depois de gravar no seu banco.
+2. **ack** só depois de gravar no seu banco; **nack sem requeue** para mandar uma mensagem com erro para a DLQ.
+3. Campos `null` permitidos: `vehicleId`, `tripId`, `umidade`, `bateria`, `limiteMin`, `limiteMax`.
+4. Exemplo pronto: [`scripts/consumidor.py`](../scripts/consumidor.py).
 
-## 6. API REST do Track usada pelos outros squads
+## 7. API REST do Track
 
-Documentação interativa (OpenAPI gerado automaticamente): `http://<host>:8000/docs`
+Documentação interativa: `http://<host>:8000/docs`. Rotas com 🔑 exigem `X-API-Key` (seção 8).
 
 | Método | Rota | Quem usa |
 |---|---|---|
-| `POST` | `/devices` | Fleet/Track: vincula sensor ↔ carga ↔ veículo ↔ viagem |
-| `GET` | `/devices/{deviceId}` | Todos |
-| `POST` | `/sensor-readings` | O próprio sensor ESP32 |
-| `GET` | `/shipments/{shipmentId}/location` | CRM, Fleet |
-| `GET` | `/shipments/{shipmentId}/history` | CRM, Finance |
-| `GET` | `/alerts?shipmentId=` | CRM, Finance |
+| `POST` | `/devices` 🔑 | WMS, Frota: vincula sensor ↔ carga ↔ veículo ↔ viagem |
+| `GET` | `/devices/{deviceId}` 🔑 | Todos |
+| `POST` | `/sensor-readings` | O sensor ESP32 (`X-Device-Key`) |
+| `GET` | `/shipments/{shipmentId}` 🔑 | Todos: status da carga (UC09) |
+| `GET` | `/shipments/{shipmentId}/location` 🔑 | CRM, Frota |
+| `GET` | `/shipments/{shipmentId}/history` 🔑 | CRM, Financeiro |
+| `GET` | `/alerts?shipmentId=` 🔑 | CRM, Financeiro |
 
-## 7. Chaves de API entre squads
+## 8. Chaves de API entre squads
 
 Toda chamada REST de outro squad para o Track precisa do header **`X-API-Key`** com a chave **do squad que
 está chamando**. O Squad 03 gera uma chave para cada squad e entrega por canal privado (nunca no Git nem no
@@ -181,7 +156,10 @@ curl -H "X-API-Key: <chave-do-seu-squad>" http://<host-do-track>:8000/shipments/
 Quando o Track precisar chamar a API de outro squad, usa a chave que **aquele squad** entregar ao Track,
 guardada como secret (ex.: `FLEET_API_KEY`). Cada squad é dono das chaves da própria API.
 
+> ⚠️ **Em aberto:** o WMS autentica com **JWT** (`Authorization: Bearer`, segredo `JWT_SECRET`
+> compartilhado). A turma precisa escolher um padrão único; o Track pode aceitar os dois.
+
 ### RabbitMQ
 A chave de API vale para o REST. Para a mensageria, o ideal é cada squad ter **seu próprio usuário no RabbitMQ**,
-com permissão só nas filas com o prefixo dele (`fleet.*`, `finance.*`...). Isso precisa ser combinado entre
+com permissão só nas filas dele (`frota.*`, `financeiro.*`...). Isso precisa ser combinado entre
 todos os squads, junto com quem hospeda o broker compartilhado.

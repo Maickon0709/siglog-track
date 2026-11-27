@@ -11,7 +11,7 @@
 | UC06 | Consultar histórico | ✅ `GET /shipments/{id}/history` |
 | UC07 | Detectar condição crítica | ✅ regra de faixa + 3 leituras seguidas |
 | UC08 | Gerar alerta | ✅ `AlertaTemperatura` / `GET /alerts` |
-| UC09 | Atualizar status da carga | ⏳ pendente |
+| UC09 | Atualizar status da carga | ✅ `CargaExpedida` do WMS → `EM_TRANSITO`, `GET /shipments/{id}` |
 
 ## Requisitos funcionais
 | Código | Descrição |

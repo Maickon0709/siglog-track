@@ -16,6 +16,7 @@ Rotas marcadas com 🔑 exigem o header `X-API-Key` do squad (401 sem chave, 403
 | POST | `/devices` 🔑 | 201 | 401, 403, 422 | WMS, Fleet |
 | GET | `/devices/{deviceId}` 🔑 | 200 | 401, 404 | Todos |
 | POST | `/sensor-readings` | 202 | 401 chave inválida, 404 sensor não vinculado, 422 dados inválidos | ESP32 |
+| GET | `/shipments/{shipmentId}` 🔑 | 200 | 401, 404 (ainda não expedida) | Todos (UC09) |
 | GET | `/shipments/{shipmentId}/location` 🔑 | 200 | 401, 404 | CRM, Fleet |
 | GET | `/shipments/{shipmentId}/history?limit=` 🔑 | 200 | 401, 422 | CRM, Finance |
 | GET | `/alerts?shipmentId=` 🔑 | 200 | 401 | CRM, Finance |

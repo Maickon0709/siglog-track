@@ -1,0 +1,253 @@
+{
+  "rabbit_version": "3.13",
+  "queues": [
+    {
+      "name": "frota.tracking.events",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-dead-letter-exchange": "siglog.tracking.dlx",
+        "x-dead-letter-routing-key": "frota.tracking.events"
+      }
+    },
+    {
+      "name": "frota.tracking.events.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum"
+      }
+    },
+    {
+      "name": "financeiro.tracking.events",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-dead-letter-exchange": "siglog.tracking.dlx",
+        "x-dead-letter-routing-key": "financeiro.tracking.events"
+      }
+    },
+    {
+      "name": "financeiro.tracking.events.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum"
+      }
+    },
+    {
+      "name": "crm.tracking.events",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-dead-letter-exchange": "siglog.tracking.dlx",
+        "x-dead-letter-routing-key": "crm.tracking.events"
+      }
+    },
+    {
+      "name": "crm.tracking.events.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum"
+      }
+    },
+    {
+      "name": "tracking.wms.events",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-dead-letter-exchange": "siglog.wms.dlx",
+        "x-dead-letter-routing-key": "tracking.wms.events"
+      }
+    },
+    {
+      "name": "tracking.wms.events.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum"
+      }
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "siglog.tracking.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "siglog.tracking.dlx",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "siglog.wms.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "siglog.wms.dlx",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "siglog.tracking.events",
+      "vhost": "/",
+      "destination": "frota.tracking.events",
+      "destination_type": "queue",
+      "routing_key": "tracking.posicao.atualizada.v1",
+      "arguments": {}
+    },
+    {
+      "source": "siglog.tracking.events",
+      "vhost": "/",
+      "destination": "frota.tracking.events",
+      "destination_type": "queue",
+      "routing_key": "tracking.dispositivo.offline.v1",
+      "arguments": {}
+    },
+    {
+      "source": "siglog.tracking.events",
+      "vhost": "/",
+      "destination": "frota.tracking.events",
+      "destination_type": "queue",
+      "routing_key": "tracking.alerta.temperatura.v1",
+      "arguments": {}
+    },
+    {
+      "source": "siglog.tracking.dlx",
+      "vhost": "/",
+      "destination": "frota.tracking.events.dlq",
+      "destination_type": "queue",
+      "routing_key": "frota.tracking.events",
+      "arguments": {}
+    },
+    {
+      "source": "siglog.tracking.events",
+      "vhost": "/",
+      "destination": "financeiro.tracking.events",
+      "destination_type": "queue",
+      "routing_key": "tracking.alerta.temperatura.v1",
+      "arguments": {}
+    },
+    {
+      "source": "siglog.tracking.events",
+      "vhost": "/",
+      "destination": "financeiro.tracking.events",
+      "destination_type": "queue",
+      "routing_key": "tracking.alerta.temperatura.encerrado.v1",
+      "arguments": {}
+    },
+    {
+      "source": "siglog.tracking.dlx",
+      "vhost": "/",
+      "destination": "financeiro.tracking.events.dlq",
+      "destination_type": "queue",
+      "routing_key": "financeiro.tracking.events",
+      "arguments": {}
+    },
+    {
+      "source": "siglog.tracking.events",
+      "vhost": "/",
+      "destination": "crm.tracking.events",
+      "destination_type": "queue",
+      "routing_key": "tracking.posicao.atualizada.v1",
+      "arguments": {}
+    },
+    {
+      "source": "siglog.tracking.events",
+      "vhost": "/",
+      "destination": "crm.tracking.events",
+      "destination_type": "queue",
+      "routing_key": "tracking.alerta.temperatura.v1",
+      "arguments": {}
+    },
+    {
+      "source": "siglog.tracking.events",
+      "vhost": "/",
+      "destination": "crm.tracking.events",
+      "destination_type": "queue",
+      "routing_key": "tracking.alerta.temperatura.encerrado.v1",
+      "arguments": {}
+    },
+    {
+      "source": "siglog.tracking.events",
+      "vhost": "/",
+      "destination": "crm.tracking.events",
+      "destination_type": "queue",
+      "routing_key": "tracking.dispositivo.offline.v1",
+      "arguments": {}
+    },
+    {
+      "source": "siglog.tracking.dlx",
+      "vhost": "/",
+      "destination": "crm.tracking.events.dlq",
+      "destination_type": "queue",
+      "routing_key": "crm.tracking.events",
+      "arguments": {}
+    },
+    {
+      "source": "siglog.wms.events",
+      "vhost": "/",
+      "destination": "tracking.wms.events",
+      "destination_type": "queue",
+      "routing_key": "wms.mercadoria.recebida.v1",
+      "arguments": {}
+    },
+    {
+      "source": "siglog.wms.events",
+      "vhost": "/",
+      "destination": "tracking.wms.events",
+      "destination_type": "queue",
+      "routing_key": "wms.produto.armazenado.v1",
+      "arguments": {}
+    },
+    {
+      "source": "siglog.wms.events",
+      "vhost": "/",
+      "destination": "tracking.wms.events",
+      "destination_type": "queue",
+      "routing_key": "wms.carga.expedida.v1",
+      "arguments": {}
+    },
+    {
+      "source": "siglog.wms.dlx",
+      "vhost": "/",
+      "destination": "tracking.wms.events.dlq",
+      "destination_type": "queue",
+      "routing_key": "tracking.wms.events",
+      "arguments": {}
+    }
+  ]
+}

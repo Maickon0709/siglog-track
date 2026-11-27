@@ -9,3 +9,5 @@ temperatura = Gauge("track_temperatura_celsius", "Ultima temperatura lida", ["de
 umidade = Gauge("track_umidade_percent", "Ultima umidade lida", ["device_id", "shipment_id"])
 dispositivos_online = Gauge("track_dispositivos_online", "Sensores enviando dentro do limite de offline")
 chamadas_por_squad_total = Counter("track_chamadas_por_squad_total", "Chamadas autenticadas por squad", ["squad"])
+eventos_consumidos_total = Counter("track_eventos_consumidos_total", "Eventos de outros modulos processados",
+                                   ["source", "evento"])

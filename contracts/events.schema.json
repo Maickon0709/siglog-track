@@ -1,0 +1,450 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://siglog.local/contracts/tracking/events.schema.json",
+  "title": "Eventos publicados pelo SIG-Log Track (exchange siglog.tracking.events)",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/TemperaturaAtualizada"
+    },
+    {
+      "$ref": "#/$defs/PosicaoAtualizada"
+    },
+    {
+      "$ref": "#/$defs/AlertaTemperatura"
+    },
+    {
+      "$ref": "#/$defs/AlertaTemperaturaEncerrado"
+    },
+    {
+      "$ref": "#/$defs/DispositivoOffline"
+    }
+  ],
+  "$defs": {
+    "TemperaturaAtualizada": {
+      "type": "object",
+      "required": [
+        "event",
+        "version",
+        "eventId",
+        "timestamp",
+        "correlationId",
+        "source",
+        "deviceId",
+        "shipmentId",
+        "vehicleId",
+        "tripId",
+        "temperatura",
+        "umidade",
+        "bateria",
+        "dentroDaFaixa"
+      ],
+      "properties": {
+        "event": {
+          "type": "string",
+          "const": "TemperaturaAtualizada"
+        },
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "correlationId": {
+          "type": "string",
+          "description": "shipmentId da carga"
+        },
+        "source": {
+          "type": "string",
+          "const": "tracking"
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "shipmentId": {
+          "type": "string"
+        },
+        "vehicleId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tripId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "temperatura": {
+          "type": "number"
+        },
+        "umidade": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "bateria": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "dentroDaFaixa": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PosicaoAtualizada": {
+      "type": "object",
+      "required": [
+        "event",
+        "version",
+        "eventId",
+        "timestamp",
+        "correlationId",
+        "source",
+        "deviceId",
+        "shipmentId",
+        "vehicleId",
+        "tripId",
+        "latitude",
+        "longitude"
+      ],
+      "properties": {
+        "event": {
+          "type": "string",
+          "const": "PosicaoAtualizada"
+        },
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "correlationId": {
+          "type": "string",
+          "description": "shipmentId da carga"
+        },
+        "source": {
+          "type": "string",
+          "const": "tracking"
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "shipmentId": {
+          "type": "string"
+        },
+        "vehicleId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tripId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "latitude": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        }
+      },
+      "additionalProperties": false
+    },
+    "AlertaTemperatura": {
+      "type": "object",
+      "required": [
+        "event",
+        "version",
+        "eventId",
+        "timestamp",
+        "correlationId",
+        "source",
+        "deviceId",
+        "shipmentId",
+        "vehicleId",
+        "tripId",
+        "alertId",
+        "tipo",
+        "valor",
+        "limiteMin",
+        "limiteMax",
+        "tipoCarga",
+        "severidade",
+        "inicioViolacao"
+      ],
+      "properties": {
+        "event": {
+          "type": "string",
+          "const": "AlertaTemperatura"
+        },
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "correlationId": {
+          "type": "string",
+          "description": "shipmentId da carga"
+        },
+        "source": {
+          "type": "string",
+          "const": "tracking"
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "shipmentId": {
+          "type": "string"
+        },
+        "vehicleId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tripId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "alertId": {
+          "type": "string"
+        },
+        "tipo": {
+          "type": "string",
+          "enum": [
+            "TEMPERATURA_ALTA",
+            "TEMPERATURA_BAIXA",
+            "UMIDADE_ALTA"
+          ]
+        },
+        "valor": {
+          "type": "number"
+        },
+        "limiteMin": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "limiteMax": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "tipoCarga": {
+          "type": "string"
+        },
+        "severidade": {
+          "type": "string",
+          "enum": [
+            "ALERTA",
+            "CRITICA"
+          ]
+        },
+        "inicioViolacao": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "AlertaTemperaturaEncerrado": {
+      "type": "object",
+      "required": [
+        "event",
+        "version",
+        "eventId",
+        "timestamp",
+        "correlationId",
+        "source",
+        "deviceId",
+        "shipmentId",
+        "vehicleId",
+        "tripId",
+        "alertId",
+        "tipo",
+        "valorExtremo",
+        "inicioViolacao",
+        "fimViolacao",
+        "duracaoSegundos"
+      ],
+      "properties": {
+        "event": {
+          "type": "string",
+          "const": "AlertaTemperaturaEncerrado"
+        },
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "correlationId": {
+          "type": "string",
+          "description": "shipmentId da carga"
+        },
+        "source": {
+          "type": "string",
+          "const": "tracking"
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "shipmentId": {
+          "type": "string"
+        },
+        "vehicleId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tripId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "alertId": {
+          "type": "string"
+        },
+        "tipo": {
+          "type": "string",
+          "enum": [
+            "TEMPERATURA_ALTA",
+            "TEMPERATURA_BAIXA",
+            "UMIDADE_ALTA"
+          ]
+        },
+        "valorExtremo": {
+          "type": "number"
+        },
+        "inicioViolacao": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "fimViolacao": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "duracaoSegundos": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "DispositivoOffline": {
+      "type": "object",
+      "required": [
+        "event",
+        "version",
+        "eventId",
+        "timestamp",
+        "correlationId",
+        "source",
+        "deviceId",
+        "shipmentId",
+        "vehicleId",
+        "tripId",
+        "ultimaLeitura",
+        "segundosSemSinal"
+      ],
+      "properties": {
+        "event": {
+          "type": "string",
+          "const": "DispositivoOffline"
+        },
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "correlationId": {
+          "type": "string",
+          "description": "shipmentId da carga"
+        },
+        "source": {
+          "type": "string",
+          "const": "tracking"
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "shipmentId": {
+          "type": "string"
+        },
+        "vehicleId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tripId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ultimaLeitura": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "segundosSemSinal": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -12,7 +12,8 @@ JSON no formato do kit, um por linha:
 | Métrica | Tipo | Uso no Grafana |
 |---|---|---|
 | `track_leituras_total{device_id}` | counter | Leituras/min (= requests/min) |
-| `track_eventos_publicados_total{evento}` | counter | Mensagens processadas |
+| `track_eventos_publicados_total{evento}` | counter | Mensagens publicadas |
+| `track_eventos_consumidos_total{source,evento}` | counter | Mensagens consumidas de outros módulos |
 | `track_erros_publicacao_total` | counter | Taxa de erros com o RabbitMQ |
 | `track_alertas_ativos` | gauge | Alertas |
 | `track_temperatura_celsius{device_id,shipment_id}` | gauge | Temperatura ao vivo |
