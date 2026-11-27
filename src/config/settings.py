@@ -1,9 +1,16 @@
 import os
 
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/%2F")
-EXCHANGE = os.getenv("EXCHANGE", "siglog.events")
+# Convencao da plataforma (a mesma do WMS): um exchange topic por modulo produtor,
+# routing key <modulo>.<evento.em.pontos>.v<versao> e uma fila <consumidor>.<produtor>.events com DLQ.
+EXCHANGE = os.getenv("EXCHANGE", "siglog.tracking.events")
 ROUTING_PREFIX = "tracking"
+SOURCE = "tracking"
 SERVICE_NAME = "siglog-track"
+
+# Consumo dos eventos do WMS (fila criada em monitoring/rabbitmq/definitions.json)
+CONSUMIR_WMS = os.getenv("CONSUMIR_WMS", "false").lower() == "true"
+FILA_WMS = os.getenv("FILA_WMS", "tracking.wms.events")
 
 DEVICE_API_KEY = os.getenv("DEVICE_API_KEY", "troque-esta-chave")
 OFFLINE_SEGUNDOS = int(os.getenv("OFFLINE_SEGUNDOS", "60"))

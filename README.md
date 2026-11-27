@@ -6,14 +6,16 @@ Um sensor físico (ESP32 + DHT22/DHT11) envia temperatura, umidade, bateria e po
 e publica eventos no RabbitMQ para o **Fleet (Squad 02)**, o **Finance (Squad 04)** e o **CRM (Squad 06)**.
 
 ```
-ESP32 + DHT22 ──HTTP──► SIG-Log Track ──RabbitMQ (siglog.events)──► Fleet · Finance · CRM
+ESP32 + DHT22 ──HTTP──► SIG-Log Track ──RabbitMQ (siglog.tracking.events)──► Frota · Financeiro · CRM
+WMS ──wms.carga.expedida.v1──► SIG-Log Track (status da carga)
                               └── /metrics ──► Prometheus ──► Grafana
 ```
 
 ## Para os outros squads
 Vocês **não precisam do nosso código**, só do contrato e de uma **chave de API** (header `X-API-Key`),
-que o Squad 03 entrega para cada squad. Veja [Chaves de API](contracts/CONTRATO_EVENTOS.md#7-chaves-de-api-entre-squads).
-- Eventos: [`contracts/CONTRATO_EVENTOS.md`](contracts/CONTRATO_EVENTOS.md) + [`contracts/evento.schema.json`](contracts/evento.schema.json)
+que o Squad 03 entrega para cada squad. Veja [Chaves de API](contracts/CONTRATO_EVENTOS.md#8-chaves-de-api-entre-squads).
+- Eventos: [`contracts/CONTRATO_EVENTOS.md`](contracts/CONTRATO_EVENTOS.md) + [`events.schema.json`](contracts/events.schema.json) + [`events.examples.json`](contracts/events.examples.json)
+- Filas e DLQs: [`monitoring/rabbitmq/definitions.json`](monitoring/rabbitmq/definitions.json) — mesma convenção do WMS
 - API REST: [`contracts/openapi.yaml`](contracts/openapi.yaml)
 - Consumidor de exemplo: [`scripts/consumidor.py`](scripts/consumidor.py)
 
@@ -50,8 +52,8 @@ Faixas padrão: VACINA 2–8 °C · RESFRIADO 0–7 °C / ≤ 90 % · CONGELADO 
 ### 5. Ver os outros squads recebendo
 ```bash
 pip install pika
-python scripts/consumidor.py finance
-python scripts/consumidor.py fleet
+python scripts/consumidor.py financeiro
+python scripts/consumidor.py frota
 ```
 
 ## Firmware ESP32
@@ -92,7 +94,7 @@ Fluxo de branches e PRs: [`docs/git_strategy.md`](docs/git_strategy.md).
 | `contracts/` | OpenAPI e contrato de eventos |
 | `docs/` | Documentos 01–13, [ADRs](docs/adr/) e estratégia Git |
 | `firmware/` | Código do ESP32 |
-| `monitoring/` | Prometheus e dashboard Grafana |
+| `monitoring/` | Prometheus, dashboard Grafana e definições do RabbitMQ |
 | `scripts/` | Simulador, consumidor de exemplo, K6, instalação |
 | `.github/workflows/` | CI (lint, testes, build, Trivy, Sonar, docker) e CD (GHCR) |
 
@@ -100,11 +102,12 @@ Fluxo de branches e PRs: [`docs/git_strategy.md`](docs/git_strategy.md).
 | Entrega | Situação |
 |---|---|
 | Sensor físico + gateway + eventos | ✅ |
-| Testes unit/integration/contract | ✅ 19 testes |
+| Testes unit/integration/contract | ✅ 54 testes |
 | OpenAPI, catálogo de eventos, ADRs, docs | ✅ (campos ✏️ para o squad completar) |
 | Docker, Compose, CI/CD, Prometheus, Grafana | ✅ |
 | MongoDB | ⏳ hoje em memória |
-| `CargaForaDaRota`, consumo de `CargaExpedida`, UC09 | ⏳ |
+| Consumo do `CargaExpedida` (WMS) e UC09 status da carga | ✅ |
+| `CargaForaDaRota` | ⏳ |
 | OpenTelemetry + Jaeger, métricas HTTP | ⏳ |
 | Resultados do K6 | ⏳ |
 

@@ -1,10 +1,12 @@
 """Casos de uso: UC01 registrar dispositivo, UC02-04 receber leituras,
-UC05-06 consultas, UC07-08 detectar condicao critica e gerar alerta."""
+UC05-06 consultas, UC07-08 detectar condicao critica e gerar alerta,
+UC09 atualizar status da carga (eventos do WMS)."""
 from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta, timezone
 
+from src.domain.carga import aplicar_carga_expedida
 from src.domain.monitoramento import (
     FAIXAS_POR_TIPO,
     Dispositivo,
@@ -130,3 +132,26 @@ class ServicoTelemetria:
     def alertas(self, shipment_id: str | None) -> list[dict]:
         with self.repo.lock:
             return [dict(a) for a in self.repo.alertas(shipment_id)]
+
+    def processar_evento_externo(self, msg: dict) -> bool:
+        """Trata um evento de outro modulo. Devolve False se foi ignorado (repetido ou nao interessa)."""
+        event_id = msg.get("eventId")
+        with self.repo.lock:
+            if event_id and self.repo.evento_ja_processado(event_id):
+                return False
+            if msg.get("event") == "CargaExpedida":
+                carga = aplicar_carga_expedida(self.repo.carga(msg.get("shipmentId", "")), msg)
+                self.repo.salvar_carga(carga)
+            else:
+                return False
+            if event_id:
+                self.repo.marcar_evento_processado(event_id)
+        metricas.eventos_consumidos_total.labels(msg["source"], msg["event"]).inc()
+        log.info("CargaEmTransito", extra={"evento": "CargaEmTransito", "eventId": event_id,
+                                           "shipmentId": carga.shipment_id})
+        return True
+
+    def status_carga(self, shipment_id: str) -> dict | None:
+        with self.repo.lock:
+            carga = self.repo.carga(shipment_id)
+            return carga.para_dict() if carga else None

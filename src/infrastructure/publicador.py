@@ -1,8 +1,14 @@
-"""Publicacao de eventos no RabbitMQ (exchange topic compartilhado da plataforma)."""
+"""Publicacao de eventos no RabbitMQ, na convencao da plataforma (a mesma do WMS):
+
+- exchange topic do modulo: siglog.tracking.events
+- routing key: tracking.<evento.em.pontos>.v<versao>  (ex.: tracking.alerta.temperatura.v1)
+- mensagem com os campos na raiz: event, version, eventId, timestamp, correlationId, source + dados
+"""
 from __future__ import annotations
 
 import json
 import logging
+import re
 import threading
 import uuid
 from datetime import datetime, timezone
@@ -11,16 +17,24 @@ import pika
 
 log = logging.getLogger("siglog-track.publicador")
 
+VERSAO = 1
+
+
+def routing_key(prefixo: str, evento: str, versao: int = VERSAO) -> str:
+    """("tracking", "AlertaTemperaturaEncerrado") -> "tracking.alerta.temperatura.encerrado.v1"."""
+    pontos = re.sub(r"(?<!^)(?=[A-Z])", ".", evento).lower()
+    return f"{prefixo}.{pontos}.v{versao}"
+
 
 def envelope(evento: str, dados: dict, source: str) -> dict:
     return {
         "event": evento,
+        "version": VERSAO,
         "eventId": str(uuid.uuid4()),
-        "version": 1,
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "correlationId": dados["shipmentId"],
         "source": source,
-        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        "correlationId": dados.get("shipmentId"),
-        "data": dados,
+        **dados,
     }
 
 
@@ -42,7 +56,7 @@ class PublicadorRabbitMQ:
         self._canal.confirm_delivery()
 
     def publicar(self, msg: dict) -> None:
-        routing_key = f"{self._prefixo}.{msg['event']}"
+        chave = routing_key(self._prefixo, msg["event"], msg["version"])
         corpo = json.dumps(msg, ensure_ascii=False).encode()
         props = pika.BasicProperties(
             content_type="application/json",
@@ -56,7 +70,7 @@ class PublicadorRabbitMQ:
                 try:
                     if self._conn is None or self._conn.is_closed:
                         self._conectar()
-                    self._canal.basic_publish(self._exchange, routing_key, corpo, props)
+                    self._canal.basic_publish(self._exchange, chave, corpo, props)
                     return
                 except pika.exceptions.AMQPError:
                     self._conn = None
@@ -73,11 +87,14 @@ class PublicadorRabbitMQ:
 class PublicadorEmMemoria:
     """Usado nos testes: guarda as mensagens em vez de enviar."""
 
-    def __init__(self):
+    def __init__(self, prefixo: str = "tracking"):
+        self.prefixo = prefixo
         self.mensagens: list[dict] = []
+        self.routing_keys: list[str] = []
 
     def publicar(self, msg: dict) -> None:
         self.mensagens.append(msg)
+        self.routing_keys.append(routing_key(self.prefixo, msg["event"], msg["version"]))
 
     def fechar(self) -> None:
         pass

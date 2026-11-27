@@ -100,6 +100,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /shipments/{shipment_id}:
+    get:
+      tags:
+      - consultas
+      summary: Status Carga
+      description: 'UC09: status da carga (EM_TRANSITO depois do CargaExpedida do
+        WMS).'
+      operationId: status_carga_shipments__shipment_id__get
+      security:
+      - APIKeyHeader: []
+      parameters:
+      - name: shipment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Shipment Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /shipments/{shipment_id}/location:
     get:
       tags:

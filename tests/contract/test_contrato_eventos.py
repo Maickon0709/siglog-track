@@ -1,11 +1,11 @@
-"""Contrato: toda mensagem publicada para Fleet/Finance/CRM segue contracts/evento.schema.json."""
+"""Contrato: toda mensagem publicada para Fleet/Finance/CRM segue contracts/events.schema.json."""
 import json
 from pathlib import Path
 
 import jsonschema
 import pytest
 
-SCHEMA = json.loads((Path(__file__).parents[2] / "contracts" / "evento.schema.json").read_text())
+SCHEMA = json.loads((Path(__file__).parents[2] / "contracts" / "events.schema.json").read_text())
 
 
 def test_eventos_publicados_respeitam_schema(ctx, enviar):
@@ -18,6 +18,7 @@ def test_eventos_publicados_respeitam_schema(ctx, enviar):
     for msg in pub.mensagens:
         jsonschema.validate(msg, SCHEMA)
         assert msg["correlationId"] == "EXP-001"
+    assert "tracking.alerta.temperatura.v1" in pub.routing_keys
 
 
 def test_contrato_offline(ctx, enviar):
@@ -30,9 +31,16 @@ def test_contrato_offline(ctx, enviar):
     jsonschema.validate(pub.mensagens[-1], SCHEMA)
 
 
+def test_exemplos_publicados_seguem_o_schema():
+    exemplos = json.loads((Path(__file__).parents[2] / "contracts" / "events.examples.json").read_text())
+    assert set(exemplos) == set(SCHEMA["$defs"])
+    for msg in exemplos.values():
+        jsonschema.validate(msg, SCHEMA)
+
+
 def test_schema_rejeita_payload_quebrado():
-    msg = {"event": "AlertaTemperatura", "eventId": "x", "version": 1, "source": "siglog-track",
-           "timestamp": "2026-11-26T14:00:00Z", "data": {"deviceId": "IOT-001"}}
+    msg = {"event": "AlertaTemperatura", "eventId": "x", "version": 1, "source": "tracking",
+           "timestamp": "2026-11-26T14:00:00Z", "correlationId": "EXP-001", "deviceId": "IOT-001"}
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate(msg, SCHEMA)
 

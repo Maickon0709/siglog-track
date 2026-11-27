@@ -1,7 +1,7 @@
 # 05 — Context Map
 
 ```
-        ┌──────────┐  CargaExpedida (⏳)   ┌──────────────┐
+        ┌──────────┐  CargaExpedida ✅      ┌──────────────┐
         │   WMS    │──────────────────────►│              │
         │ Squad 01 │                       │              │  PosicaoAtualizada
         └──────────┘                       │              │  DispositivoOffline
@@ -20,7 +20,7 @@
 
 | Relação | Padrão DDD | Observação |
 |---|---|---|
-| Track → Fleet, Finance, CRM | **Published Language** + Open Host Service | Contrato em `contracts/` (JSON Schema + OpenAPI) |
-| WMS → Track | Customer/Supplier | Track consome `CargaExpedida` |
+| Track → Frota, Financeiro, CRM | **Published Language** + Open Host Service | Contrato em `contracts/`, com a mesma convenção do WMS |
+| WMS → Track | Customer/Supplier | Track consome `wms.carga.expedida.v1` da fila `tracking.wms.events` (✅) |
 | Fleet → Track | Customer/Supplier | Track precisa da rota para `CargaForaDaRota` |
 | Sensor → Track | Conformist | O firmware segue o formato definido pelo Track |

@@ -8,6 +8,7 @@ from __future__ import annotations
 import threading
 from collections import defaultdict, deque
 
+from src.domain.carga import Carga
 from src.domain.monitoramento import Dispositivo
 
 
@@ -17,6 +18,8 @@ class RepositorioEmMemoria:
         self._dispositivos: dict[str, Dispositivo] = {}
         self._historico: dict[str, deque] = defaultdict(lambda: deque(maxlen=historico_max))
         self._alertas: list[dict] = []
+        self._cargas: dict[str, Carga] = {}
+        self._eventos_processados: set[str] = set()
 
     def salvar_dispositivo(self, disp: Dispositivo) -> None:
         self._dispositivos[disp.device_id] = disp
@@ -44,3 +47,15 @@ class RepositorioEmMemoria:
 
     def alertas(self, shipment_id: str | None = None) -> list[dict]:
         return [a for a in self._alertas if shipment_id is None or a["shipmentId"] == shipment_id]
+
+    def carga(self, shipment_id: str) -> Carga | None:
+        return self._cargas.get(shipment_id)
+
+    def salvar_carga(self, carga: Carga) -> None:
+        self._cargas[carga.shipment_id] = carga
+
+    def evento_ja_processado(self, event_id: str) -> bool:
+        return event_id in self._eventos_processados
+
+    def marcar_evento_processado(self, event_id: str) -> None:
+        self._eventos_processados.add(event_id)

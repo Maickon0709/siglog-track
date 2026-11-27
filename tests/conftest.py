@@ -14,7 +14,7 @@ CHAVE = {"X-Device-Key": settings.DEVICE_API_KEY}
 def ctx():
     """Cliente HTTP da API com publicador em memoria e um sensor ja vinculado."""
     pub = PublicadorEmMemoria()
-    servico = ServicoTelemetria(RepositorioEmMemoria(100), pub, settings.SERVICE_NAME, 60)
+    servico = ServicoTelemetria(RepositorioEmMemoria(100), pub, settings.SOURCE, 60)
     with TestClient(criar_app(servico, iniciar_monitor=False), headers={"X-API-Key": "dev-fleet"}) as client:
         client.post("/devices", json={"deviceId": "IOT-001", "shipmentId": "EXP-001",
                                       "vehicleId": "VEI-042", "tripId": "VIA-1", "tipoCarga": "VACINA"})

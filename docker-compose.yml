@@ -8,12 +8,13 @@ services:
       - "8000:8000"     # API (/docs) e o ESP32 envia para http://<ip-do-pc>:8000/sensor-readings
     environment:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/%2F
+      CONSUMIR_WMS: "true"
       DEVICE_API_KEY: ${DEVICE_API_KEY:-troque-esta-chave}
       SQUAD_API_KEYS: ${SQUAD_API_KEYS:-wms=dev-wms,fleet=dev-fleet,finance=dev-finance,people=dev-people,crm=dev-crm,track=dev-track}
       OFFLINE_SEGUNDOS: "60"
     depends_on:
-      rabbitmq:
-        condition: service_healthy
+      rabbitmq-definicoes:
+        condition: service_completed_successfully
 
   rabbitmq:
     image: rabbitmq:3.13-management
@@ -24,6 +25,19 @@ services:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       retries: 10
+
+  # Importa exchanges, filas (com DLQ) e bindings de monitoring/rabbitmq/definitions.json.
+  # A importacao pela API soma as definicoes as que ja existem (ex.: as do WMS) sem apagar nada.
+  rabbitmq-definicoes:
+    image: curlimages/curl:8.11.1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./monitoring/rabbitmq/definitions.json:/definitions.json:ro
+    command: >
+      -fsS -u guest:guest -H "Content-Type: application/json"
+      -X POST http://rabbitmq:15672/api/definitions --data-binary @/definitions.json
 
   prometheus:
     image: prom/prometheus:v2.55.1
