@@ -41,10 +41,9 @@ jobs:
         with: { python-version: "3.12" }
       - run: pip install -r requirements.txt
       - run: python -m compileall -q src
+      - uses: arduino/setup-arduino-cli@v2
       - name: Firmware ESP32 compila
         run: |
-          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=$HOME/bin sh
-          export PATH=$HOME/bin:$PATH
           arduino-cli config init
           arduino-cli config set board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
           arduino-cli core update-index
@@ -60,7 +59,7 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
       - name: Trivy (dependencias e segredos no codigo)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scanners: vuln,secret,misconfig
@@ -83,7 +82,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: docker build -t siglog-track:${{ github.sha }} .
       - name: Trivy (imagem Docker)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: siglog-track:${{ github.sha }}
           severity: HIGH,CRITICAL
