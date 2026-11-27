@@ -11,7 +11,8 @@ ESP32 + DHT22 ──HTTP──► SIG-Log Track ──RabbitMQ (siglog.events)�
 ```
 
 ## Para os outros squads
-Vocês **não precisam do nosso código**, só do contrato:
+Vocês **não precisam do nosso código**, só do contrato e de uma **chave de API** (header `X-API-Key`),
+que o Squad 03 entrega para cada squad. Veja [Chaves de API](contracts/CONTRATO_EVENTOS.md#7-chaves-de-api-entre-squads).
 - Eventos: [`contracts/CONTRATO_EVENTOS.md`](contracts/CONTRATO_EVENTOS.md) + [`contracts/evento.schema.json`](contracts/evento.schema.json)
 - API REST: [`contracts/openapi.yaml`](contracts/openapi.yaml)
 - Consumidor de exemplo: [`scripts/consumidor.py`](scripts/consumidor.py)
@@ -37,7 +38,7 @@ docker compose up --build
 
 ### 3. Vincular o sensor à carga
 ```bash
-curl -X POST localhost:8000/devices -H 'Content-Type: application/json' \
+curl -X POST localhost:8000/devices -H 'Content-Type: application/json' -H 'X-API-Key: dev-track' \
   -d '{"deviceId":"IOT-001","shipmentId":"EXP-001","vehicleId":"VEI-042","tripId":"VIA-2026-0917","tipoCarga":"VACINA"}'
 ```
 Faixas padrão: VACINA 2–8 °C · RESFRIADO 0–7 °C / ≤ 90 % · CONGELADO ≤ −18 °C · AMBIENTE 15–30 °C / ≤ 70 %.

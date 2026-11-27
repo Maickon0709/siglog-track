@@ -15,10 +15,12 @@ import urllib.request
 from datetime import datetime, timezone
 
 
-def post(url, corpo, chave=None):
+def post(url, corpo, chave=None, chave_squad=None):
     headers = {"Content-Type": "application/json"}
     if chave:
         headers["X-Device-Key"] = chave
+    if chave_squad:
+        headers["X-API-Key"] = chave_squad
     req = urllib.request.Request(url, json.dumps(corpo).encode(), headers)
     try:
         with urllib.request.urlopen(req, timeout=5) as r:
@@ -30,7 +32,8 @@ def post(url, corpo, chave=None):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--url", default="http://localhost:8000")
-    p.add_argument("--chave", default="troque-esta-chave")
+    p.add_argument("--chave", default="troque-esta-chave", help="X-Device-Key do sensor")
+    p.add_argument("--chave-squad", default="dev-track", help="X-API-Key usada no POST /devices")
     p.add_argument("--device", default="IOT-001")
     p.add_argument("--shipment", default="EXP-001")
     p.add_argument("--intervalo", type=float, default=2.0)
@@ -39,7 +42,7 @@ def main():
 
     print(post(f"{a.url}/devices", {"deviceId": a.device, "shipmentId": a.shipment,
                                     "vehicleId": "VEI-042", "tripId": "VIA-2026-0917",
-                                    "tipoCarga": "VACINA"}))
+                                    "tipoCarga": "VACINA"}, chave_squad=a.chave_squad))
 
     lat, lon, i = -23.5505, -46.6333, 0
     while True:

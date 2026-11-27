@@ -8,10 +8,11 @@ import threading
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, Header, HTTPException, Query, Response
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel, Field
 
+from src.api.seguranca import exigir_squad, squad_autenticado
 from src.application.servico_telemetria import DispositivoNaoEncontrado, ServicoTelemetria
 from src.config import settings
 from src.infrastructure.publicador import PublicadorRabbitMQ
@@ -87,7 +88,15 @@ def criar_app(servico: ServicoTelemetria | None = None, iniciar_monitor: bool = 
         parar.set()
         servico.publicador.fechar()
 
-    app = FastAPI(title="SIG-Log Track — Sensor IoT", version="1.0.0", lifespan=ciclo_de_vida)
+    app = FastAPI(
+        title="SIG-Log Track — Sensor IoT",
+        version="1.1.0",
+        description="Consultas e cadastro exigem o header **X-API-Key** do seu squad. "
+                    "O sensor usa **X-Device-Key** em `/sensor-readings`.",
+        lifespan=ciclo_de_vida,
+    )
+    vincula = Depends(exigir_squad(settings.SQUADS_QUE_VINCULAM_DISPOSITIVOS))
+    consulta = Depends(squad_autenticado)
     app.state.servico = servico
 
     def _disp_out(d):
@@ -109,7 +118,7 @@ def criar_app(servico: ServicoTelemetria | None = None, iniciar_monitor: bool = 
     def metrics():
         return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
-    @app.post("/devices", status_code=201, tags=["dispositivos"])
+    @app.post("/devices", status_code=201, tags=["dispositivos"], dependencies=[vincula])
     def registrar_dispositivo(body: DispositivoIn):
         d = servico.registrar_dispositivo(
             body.deviceId, body.shipmentId, body.tipoCarga, body.vehicleId, body.tripId,
@@ -117,7 +126,7 @@ def criar_app(servico: ServicoTelemetria | None = None, iniciar_monitor: bool = 
         )
         return _disp_out(d)
 
-    @app.get("/devices/{device_id}", tags=["dispositivos"])
+    @app.get("/devices/{device_id}", tags=["dispositivos"], dependencies=[consulta])
     def obter_dispositivo(device_id: str):
         d = servico.repo.dispositivo(device_id)
         if d is None:
@@ -138,18 +147,18 @@ def criar_app(servico: ServicoTelemetria | None = None, iniciar_monitor: bool = 
             raise HTTPException(404, "dispositivo nao registrado: faca POST /devices primeiro") from None
         return {"eventos": eventos}
 
-    @app.get("/shipments/{shipment_id}/location", tags=["consultas"])
+    @app.get("/shipments/{shipment_id}/location", tags=["consultas"], dependencies=[consulta])
     def localizacao(shipment_id: str):
         loc = servico.localizacao(shipment_id)
         if loc is None:
             raise HTTPException(404, "sem posicao para esta carga")
         return loc
 
-    @app.get("/shipments/{shipment_id}/history", tags=["consultas"])
+    @app.get("/shipments/{shipment_id}/history", tags=["consultas"], dependencies=[consulta])
     def historico(shipment_id: str, limit: int = Query(100, ge=1, le=5000)):
         return servico.historico(shipment_id, limit)
 
-    @app.get("/alerts", tags=["consultas"])
+    @app.get("/alerts", tags=["consultas"], dependencies=[consulta])
     def alertas(shipmentId: str | None = None):
         return servico.alertas(shipmentId)
 

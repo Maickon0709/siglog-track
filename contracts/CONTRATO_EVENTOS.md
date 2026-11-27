@@ -149,3 +149,39 @@ Documentação interativa (OpenAPI gerado automaticamente): `http://<host>:8000/
 | `GET` | `/shipments/{shipmentId}/location` | CRM, Fleet |
 | `GET` | `/shipments/{shipmentId}/history` | CRM, Finance |
 | `GET` | `/alerts?shipmentId=` | CRM, Finance |
+
+## 7. Chaves de API entre squads
+
+Toda chamada REST de outro squad para o Track precisa do header **`X-API-Key`** com a chave **do squad que
+está chamando**. O Squad 03 gera uma chave para cada squad e entrega por canal privado (nunca no Git nem no
+grupo da turma).
+
+```bash
+curl -H "X-API-Key: <chave-do-seu-squad>" http://<host-do-track>:8000/shipments/EXP-001/location
+```
+
+| Squad | Pode consultar (`GET`) | Pode vincular sensor (`POST /devices`) |
+|---|---|---|
+| 01 — WMS | ✅ | ✅ |
+| 02 — Fleet | ✅ | ✅ |
+| 04 — Finance | ✅ | ❌ (403) |
+| 05 — People | ✅ | ❌ (403) |
+| 06 — CRM | ✅ | ❌ (403) |
+
+| Resposta | Significado |
+|---|---|
+| `401` | Chave ausente ou inválida |
+| `403` | Chave válida, mas o squad não tem permissão para a operação |
+
+- `/health` e `/metrics` são públicos; `/sensor-readings` usa a chave do sensor (`X-Device-Key`), não a de squad.
+- No ambiente local (`docker compose`) as chaves de desenvolvimento são `dev-wms`, `dev-fleet`, `dev-finance`,
+  `dev-people` e `dev-crm`. Em produção elas vêm da variável `SQUAD_API_KEYS` (secret).
+
+### Chamadas no sentido contrário
+Quando o Track precisar chamar a API de outro squad, usa a chave que **aquele squad** entregar ao Track,
+guardada como secret (ex.: `FLEET_API_KEY`). Cada squad é dono das chaves da própria API.
+
+### RabbitMQ
+A chave de API vale para o REST. Para a mensageria, o ideal é cada squad ter **seu próprio usuário no RabbitMQ**,
+com permissão só nas filas com o prefixo dele (`fleet.*`, `finance.*`...). Isso precisa ser combinado entre
+todos os squads, junto com quem hospeda o broker compartilhado.
