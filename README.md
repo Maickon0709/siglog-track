@@ -29,7 +29,7 @@ Depois saia da sessão e entre de novo.
 
 ### 2. Subir tudo
 ```bash
-docker compose up --build
+docker compose up --build    # sem o plugin buildx: DOCKER_BUILDKIT=0 docker build -t siglog-track:local . && docker compose up -d --no-build
 ```
 | Serviço | Endereço |
 |---|---|
@@ -49,7 +49,14 @@ Faixas padrão: VACINA 2–8 °C · RESFRIADO 0–7 °C / ≤ 90 % · CONGELADO 
 - **Físico:** veja [Firmware](#firmware-esp32).
 - **Simulado:** `python scripts/simular_sensor.py --falha`
 
-### 5. Ver os outros squads recebendo
+### 5. Teste de ponta a ponta
+Com o `docker compose up` rodando, confere sensor → filas → schema, o `CargaExpedida` do WMS, a DLQ,
+o Prometheus e o Grafana (25 verificações):
+```bash
+python -m scripts.teste_ponta_a_ponta
+```
+
+### 6. Ver os outros squads recebendo
 ```bash
 pip install pika
 python scripts/consumidor.py financeiro
